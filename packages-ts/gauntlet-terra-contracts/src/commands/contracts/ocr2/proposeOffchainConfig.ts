@@ -1,10 +1,9 @@
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
 import { time, BN } from '@chainlink/gauntlet-core/dist/utils'
 import { serializeOffchainConfig } from '../../../lib/encoding'
 import { ORACLES_MAX_LENGTH } from '../../../lib/constants'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   proposalId: string
@@ -176,4 +175,4 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(instruction)
+export default abstract.instructionToCommand(instruction)

@@ -2,7 +2,6 @@ import { FlowCommand } from '@chainlink/gauntlet-core'
 import { CATEGORIES } from '../../../lib/constants'
 import { waitExecute, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { MnemonicKey } from '@terra-money/terra.js'
-import { makeAbstractCommand } from '../../abstract'
 import UploadContractCode from '../../tooling/upload'
 import DeployLink from '../link/deploy'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
@@ -13,13 +12,14 @@ import ProposeOffchainConfig from './proposeOffchainConfig'
 import BeginProposal from './proposal/beginProposal'
 import FinalizeProposal from './proposal/finalizeProposal'
 import AcceptProposal from './proposal/acceptProposal'
+import { abstract } from '../..'
 
 export default class DeployOCR2Flow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:setup:flow'
   static category = CATEGORIES.OCR
 
   constructor(flags, args) {
-    super(flags, args, waitExecute, makeAbstractCommand)
+    super(flags, args, waitExecute, abstract.makeAbstractCommand)
 
     const oraclesLength = this.flags.oracles || 16
 

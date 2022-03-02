@@ -1,6 +1,7 @@
 import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
 import { isValidAddress } from '../../../lib/utils'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   admin: string
@@ -42,4 +43,4 @@ const createUpdateAdminInstruction: AbstractInstruction<CommandInput, ContractIn
   makeContractInput,
 }
 
-export const UpdateAdmin = instructionToCommand(createUpdateAdminInstruction)
+export const UpdateAdmin = abstract.instructionToCommand(createUpdateAdminInstruction)

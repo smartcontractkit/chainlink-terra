@@ -2,7 +2,7 @@ import { inspection, logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CONTRACT_LIST } from '../../../../lib/contracts'
 import { CATEGORIES } from '../../../../lib/constants'
 import { getRDD } from '../../../../lib/rdd'
-import { InspectInstruction, instructionToInspectCommand } from '../../../abstract/inspectionWrapper'
+import { abstract, InspectInstruction } from '../../..'
 
 const MIN_LINK_AVAILABLE = '100'
 
@@ -169,4 +169,4 @@ const instruction: InspectInstruction<any, ContractExpectedInfo> = {
   inspect,
 }
 
-export default instructionToInspectCommand<any, ContractExpectedInfo>(instruction)
+export default abstract.instructionToInspectCommand<any, ContractExpectedInfo>(instruction)

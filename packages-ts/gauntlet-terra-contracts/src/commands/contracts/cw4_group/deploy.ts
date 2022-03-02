@@ -1,6 +1,7 @@
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   owners: string[]
@@ -55,4 +56,4 @@ const createGroupInstruction: AbstractInstruction<CommandInput, ContractInput> =
   makeContractInput,
 }
 
-export const CreateGroup = instructionToCommand(createGroupInstruction)
+export const CreateGroup = abstract.instructionToCommand(createGroupInstruction)

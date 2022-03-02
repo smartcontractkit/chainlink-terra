@@ -2,7 +2,7 @@ import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { AccAddress } from '@terra-money/terra.js'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   address: string
@@ -44,4 +44,4 @@ const proposeContract: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(proposeContract)
+export default abstract.instructionToCommand(proposeContract)

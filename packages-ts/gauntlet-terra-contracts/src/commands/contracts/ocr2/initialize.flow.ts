@@ -2,7 +2,6 @@ import { FlowCommand } from '@chainlink/gauntlet-core'
 import { CATEGORIES } from '../../../lib/constants'
 import { waitExecute, TransactionResponse } from '@chainlink/gauntlet-terra'
 import { logger, prompt } from '@chainlink/gauntlet-core/dist/utils'
-import { makeAbstractCommand } from '../../abstract'
 import DeployOCR2 from './deploy'
 import SetBilling from './setBilling'
 import ProposeConfig from './proposeConfig'
@@ -11,6 +10,7 @@ import BeginProposal from './proposal/beginProposal'
 import AcceptProposal from './proposal/acceptProposal'
 import FinalizeProposal from './proposal/finalizeProposal'
 import Inspect from './inspection/inspect'
+import { abstract } from '../..'
 
 export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse> {
   static id = 'ocr2:initialize:flow'
@@ -18,7 +18,7 @@ export default class OCR2InitializeFlow extends FlowCommand<TransactionResponse>
   static examples = ['yarn gauntlet ocr2:initialize:flow --network=local --id=[ID] --rdd=[PATH_TO_RDD]']
 
   constructor(flags, args) {
-    super(flags, args, waitExecute, makeAbstractCommand)
+    super(flags, args, waitExecute, abstract.makeAbstractCommand)
 
     this.stepIds = {
       OCR_2: 1,

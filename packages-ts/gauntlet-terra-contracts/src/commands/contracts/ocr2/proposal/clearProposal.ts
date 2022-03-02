@@ -1,7 +1,7 @@
 import { Result } from '@chainlink/gauntlet-core'
 import { TransactionResponse } from '@chainlink/gauntlet-terra'
 import { CATEGORIES } from '../../../../lib/constants'
-import { instructionToCommand, AbstractInstruction } from '../../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../../..'
 
 type CommandInput = {
   proposalId: string
@@ -47,4 +47,4 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   afterExecute,
 }
 
-export default instructionToCommand(instruction)
+export default abstract.instructionToCommand(instruction)

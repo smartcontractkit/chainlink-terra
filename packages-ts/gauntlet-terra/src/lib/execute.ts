@@ -10,7 +10,7 @@ export const waitExecute = (execute: () => Promise<Result<TransactionResponse>>)
     logger.info(`${txReceipts.length} transactions confirmed`)
     const confirmedResult: ConfirmedResult<TransactionResponse> = {
       data: result.data,
-      responses: txReceipts.map((tx, i) => ({ success: tx.success, ...result.responses[i] })),
+      responses: txReceipts.map((tx, i) => ({ success: !!tx?.success, ...result.responses[i] })),
     }
     return confirmedResult
   }

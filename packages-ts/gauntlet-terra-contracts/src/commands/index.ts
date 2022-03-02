@@ -1,3 +1,27 @@
+import { getContract, CONTRACT_LIST } from '../lib/contracts'
+import {
+  AbstractTools,
+  AbstractInstructionTemplate,
+  InspectInstructionTemplate,
+} from '@chainlink/gauntlet-terra/dist/commands/abstract'
+const enumKeys = Object.keys(CONTRACT_LIST)
+const contractRecords: Record<string, CONTRACT_LIST> = enumKeys.reduce(
+  // create map from strings to enum keys
+  (rec: Record<string, CONTRACT_LIST>, k: CONTRACT_LIST) => ((rec[CONTRACT_LIST[k]] = k), rec),
+  {},
+)
+export const abstract: AbstractTools<CONTRACT_LIST> = new AbstractTools<CONTRACT_LIST>(contractRecords, getContract)
+export type AbstractInstruction<CommandInput, ContractInput> = AbstractInstructionTemplate<
+  CommandInput,
+  ContractInput,
+  CONTRACT_LIST
+>
+export type InspectInstruction<CommandInput, ContractInput> = InspectInstructionTemplate<
+  CommandInput,
+  ContractInput,
+  CONTRACT_LIST
+>
+
 import Upload from './tooling/upload'
 import TransferLink from './contracts/link/transfer'
 import DeployLink from './contracts/link/deploy'

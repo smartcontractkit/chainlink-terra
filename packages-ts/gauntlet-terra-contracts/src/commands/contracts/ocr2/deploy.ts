@@ -1,7 +1,6 @@
 import { getRDD } from '../../../lib/rdd'
-import { instructionToCommand, AbstractInstruction } from '../../abstract/executionWrapper'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
+import { abstract, AbstractInstruction } from '../..'
 
 type CommandInput = {
   billingAccessController: string
@@ -66,4 +65,4 @@ const deployInstruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(deployInstruction)
+export default abstract.instructionToCommand(deployInstruction)

@@ -1,9 +1,8 @@
-import AbstractCommand, { makeAbstractCommand } from '.'
+import { AbstractTools } from '.'
 import { Result } from '@chainlink/gauntlet-core'
-import { TerraCommand, TransactionResponse } from '@chainlink/gauntlet-terra'
+import { TerraCommand, TransactionResponse } from '../..'
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
-import { CATEGORIES } from '../../lib/constants'
-import { CONTRACT_LIST } from '../../lib/contracts'
+import { Contract } from '../../lib/contracts'
 import { APIParams } from '@terra-money/terra.js/dist/client/lcd/APIRequester'
 
 export type Query = (contractAddress: string, query: any, params?: APIParams) => Promise<any>
@@ -20,28 +19,30 @@ export type Query = (contractAddress: string, query: any, params?: APIParams) =>
  * makeOnchainData: Parses every instruction command result to match the same interface the Inspection command expects
  * inspect: Compares both expected and onchain data.
  */
-export interface InspectInstruction<CommandInput, ContractExpectedInfo> {
+export interface InspectInstructionTemplate<CommandInput, ContractExpectedInfo, ContractList extends string> {
   command: {
-    category: CATEGORIES
-    contract: CONTRACT_LIST
+    category: string // CATEGORIES
+    contract: ContractList
     id: 'inspect'
   }
   instructions: {
     contract: string
     function: string
   }[]
-  makeInput: (flags: any, args: string[]) => Promise<CommandInput>
-  makeInspectionData: (query: Query) => (input: CommandInput) => Promise<ContractExpectedInfo>
+  makeInput: (flags: any, args: string[]) => Promise<ContractExpectedInfo>
+  makeInspectionData: (query: Query) => (input: ContractExpectedInfo) => Promise<ContractExpectedInfo>
   makeOnchainData: (query: Query) => (instructionsData: any[]) => ContractExpectedInfo
   inspect: (expected: ContractExpectedInfo, data: ContractExpectedInfo) => boolean
 }
 
-export const instructionToInspectCommand = <CommandInput, Expected>(
-  inspectInstruction: InspectInstruction<CommandInput, Expected>,
+export const instructionToInspectCommand = <CommandInput, ContractExpectedInfo, ContractList extends string>(
+  abstract: AbstractTools<ContractList>,
+  inspectInstruction: InspectInstructionTemplate<CommandInput, ContractExpectedInfo, any>,
 ) => {
   const id = `${inspectInstruction.command.contract}:${inspectInstruction.command.id}`
   return class Command extends TerraCommand {
     static id = id
+    static abstract: AbstractTools<ContractList> = abstract
 
     constructor(flags, args) {
       super(flags, args)
@@ -55,7 +56,12 @@ export const instructionToInspectCommand = <CommandInput, Expected>(
       const input = await inspectInstruction.makeInput(this.flags, this.args)
       const commands = await Promise.all(
         inspectInstruction.instructions.map((instruction) =>
-          makeAbstractCommand(`${instruction.contract}:${instruction.function}`, this.flags, this.args, input),
+          Command.abstract.makeAbstractCommand(
+            `${instruction.contract}:${instruction.function}`,
+            this.flags,
+            this.args,
+            input,
+          ),
         ),
       )
 

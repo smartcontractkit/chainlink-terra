@@ -1,6 +1,7 @@
 import { AccAddress } from '@terra-money/terra.js'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 import { CATEGORIES } from '../../../lib/constants'
+import { CONTRACT_LIST, getContract } from '../../../lib/contracts'
 
 type CommandInput = {
   address: string
@@ -41,4 +42,4 @@ const addAccess: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(addAccess)
+export default abstract.instructionToCommand(addAccess)

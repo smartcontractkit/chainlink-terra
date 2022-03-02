@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../../../lib/constants'
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 
 type OnchainConfig = any
 type CommandInput = {
@@ -78,4 +78,4 @@ const instruction: AbstractInstruction<CommandInput, ContractInput> = {
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(instruction)
+export default abstract.instructionToCommand(instruction)

@@ -1,9 +1,10 @@
 import { io, logger } from '@chainlink/gauntlet-core/dist/utils'
-import { JSONSchemaType } from 'ajv'
 import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import fetch from 'node-fetch'
 import { DEFAULT_RELEASE_VERSION, DEFAULT_CWPLUS_VERSION } from './constants'
+import { Contract } from '@chainlink/gauntlet-terra'
+import { TerraABI } from '@chainlink/gauntlet-terra/dist/lib/schema'
 
 export enum CONTRACT_LIST {
   FLAGS = 'flags',
@@ -15,26 +16,6 @@ export enum CONTRACT_LIST {
   MULTISIG = 'cw3_flex_multisig',
   CW4_GROUP = 'cw4_group',
 }
-
-export enum TERRA_OPERATIONS {
-  DEPLOY = 'instantiate',
-  EXECUTE = 'execute',
-  QUERY = 'query',
-}
-
-export type TerraABI = {
-  [TERRA_OPERATIONS.DEPLOY]: JSONSchemaType<any>
-  [TERRA_OPERATIONS.EXECUTE]: JSONSchemaType<any>
-  [TERRA_OPERATIONS.QUERY]: JSONSchemaType<any>
-}
-
-export type Contract = {
-  id: CONTRACT_LIST
-  abi: TerraABI
-  bytecode: string
-}
-
-export type Contracts = Record<CONTRACT_LIST, Contract>
 
 export const getContractCode = async (contractId: CONTRACT_LIST, version): Promise<string> => {
   if (version === 'local') {
@@ -112,6 +93,7 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
           return path.join(contractPath, `./${toDirName(contractId)}/schema/${type}`)
         }
       }
+
       return {
         execute: io.readJSON(toPath('execute_msg')),
         query: io.readJSON(toPath('query_msg')),
@@ -125,11 +107,15 @@ export const getContractABI = (contractId: CONTRACT_LIST): TerraABI => {
   return abi[0]
 }
 
-export const getContract = async (id: CONTRACT_LIST, version): Promise<Contract> => {
+export const getContract = async (contractName: CONTRACT_LIST, version): Promise<Contract> => {
+  // First convert contactName (a string restricted to the values of CONTRACT_LIST) to an actual member of
+  //  the enum; typescript sees both as the same, but conversion must happen at runtime since javascript
+  //  treats them as two completely different types
+  const id: CONTRACT_LIST = CONTRACT_LIST[contractName]
   version = version ? version : defaultContractVersions[id]
   // Preload contracts
   return {
-    id,
+    id: id,
     abi: getContractABI(id),
     bytecode: await getContractCode(id, version),
   }

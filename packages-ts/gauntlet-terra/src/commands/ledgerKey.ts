@@ -53,7 +53,7 @@ export class LedgerKey extends Key {
     const transport = await TransportNodeHid.create()
     const ledgerConnector = new LedgerTerraConnector(transport)
     const response = await ledgerConnector.initialize()
-    this.assertNoErrors(response)
+    this.assertNoErrors(response!)
 
     return {
       ledgerConnector,

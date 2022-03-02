@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../../'
 
 type CW4_GROUP_Member = {
   addr: string
@@ -70,4 +70,4 @@ const createUpdateMembersInstruction: AbstractInstruction<CommandInput, Contract
   makeContractInput,
 }
 
-export const UpdateMembers = instructionToCommand(createUpdateMembersInstruction)
+export const UpdateMembers = abstract.instructionToCommand(createUpdateMembersInstruction)

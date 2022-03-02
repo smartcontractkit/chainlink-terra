@@ -1,12 +1,12 @@
 import { makeTransferOwnershipInstruction } from './transferOwnership'
 import { makeAcceptOwnershipInstruction } from './acceptOwnership'
-import { instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract } from '../..'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 
 export const makeTransferOwnershipCommand = (contractId: CONTRACT_LIST) => {
-  return instructionToCommand(makeTransferOwnershipInstruction(contractId))
+  return abstract.instructionToCommand(makeTransferOwnershipInstruction(contractId))
 }
 
 export const makeAcceptOwnershipCommand = (contractId: CONTRACT_LIST) => {
-  return instructionToCommand(makeAcceptOwnershipInstruction(contractId))
+  return abstract.instructionToCommand(makeAcceptOwnershipInstruction(contractId))
 }

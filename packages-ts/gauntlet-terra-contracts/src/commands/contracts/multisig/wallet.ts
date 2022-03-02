@@ -1,7 +1,7 @@
 import { logger } from '@chainlink/gauntlet-core/dist/utils'
 import { CATEGORIES } from '../../../lib/constants'
 import { isValidAddress } from '../../../lib/utils'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 
 // 7 days
 const DEFAULT_MULTISIG_EXPIRATION_TIME_IN_SECS = 7 * 24 * 60 * 60
@@ -98,4 +98,4 @@ const createWalletInstruction: AbstractInstruction<CommandInput, ContractInput> 
   makeContractInput: makeContractInput,
 }
 
-export const CreateWallet = instructionToCommand(createWalletInstruction)
+export const CreateWallet = abstract.instructionToCommand(createWalletInstruction)

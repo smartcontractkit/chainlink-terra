@@ -1,8 +1,7 @@
 import { BN } from '@chainlink/gauntlet-core/dist/utils'
 import { getRDD } from '../../../lib/rdd'
-import { AbstractInstruction, instructionToCommand } from '../../abstract/executionWrapper'
+import { abstract, AbstractInstruction } from '../..'
 import { CATEGORIES } from '../../../lib/constants'
-import { CONTRACT_LIST } from '../../../lib/contracts'
 
 type CommandInput = {
   recommendedGasPriceMicro: string
@@ -82,4 +81,4 @@ const setBillingInstruction: AbstractInstruction<CommandInput, ContractInput> = 
   makeContractInput: makeContractInput,
 }
 
-export default instructionToCommand(setBillingInstruction)
+export default abstract.instructionToCommand(setBillingInstruction)

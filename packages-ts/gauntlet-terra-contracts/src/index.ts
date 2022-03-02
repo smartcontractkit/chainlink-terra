@@ -3,16 +3,17 @@ import { multisigWrapCommand, commands as CWPlusCommands } from '@chainlink/gaun
 import { existsSync } from 'fs'
 import path from 'path'
 import { io } from '@chainlink/gauntlet-core/dist/utils'
-import Terra from './commands'
-import { makeAbstractCommand } from './commands/abstract'
+import { CONTRACT_LIST } from './lib/contracts'
+import { abstract } from './commands'
 import { defaultFlags } from './lib/args'
+import Terra from './commands'
 
 const commands = {
   custom: [...Terra, ...Terra.map(multisigWrapCommand), ...CWPlusCommands],
   loadDefaultFlags: () => defaultFlags,
   abstract: {
     findPolymorphic: () => undefined,
-    makeCommand: makeAbstractCommand,
+    makeCommand: abstract.makeAbstractCommand,
   },
 }
 

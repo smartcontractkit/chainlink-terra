@@ -1,5 +1,5 @@
 import { AccAddress } from '@terra-money/terra.js'
-import { AbstractInstruction } from '../../abstract/executionWrapper'
+import { AbstractInstruction } from '../..'
 import { CATEGORIES } from '../../../lib/constants'
 import { CONTRACT_LIST } from '../../../lib/contracts'
 
