@@ -23,7 +23,7 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
   contracts: string[]
   public codeIds: CodeIds
   abstract execute: () => Promise<Result<TransactionResponse>>
-  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract>
+  abstract makeRawTransaction: (signer: AccAddress) => Promise<MsgExecuteContract[]>
   afterExecute?: (response: Result<TransactionResponse>) => any
 
   constructor(flags, args) {
@@ -89,6 +89,22 @@ export default abstract class TerraCommand extends WriteCommand<TransactionRespo
 
     const tx = await this.wallet.createAndSignTx({
       msgs: [msg],
+      ...(this.wallet.key instanceof LedgerKey && {
+        signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
+      }),
+    })
+
+    const res = await this.provider.tx.broadcast(tx)
+    return this.wrapResponse(res)
+  }
+
+  async callBatch(address, inputs) {
+    const msgs: MsgExecuteContract[] = inputs.map(
+      (input) => new MsgExecuteContract(this.wallet.key.accAddress, address, input),
+    )
+
+    const tx = await this.wallet.createAndSignTx({
+      msgs: msgs,
       ...(this.wallet.key instanceof LedgerKey && {
         signMode: SignMode.SIGN_MODE_LEGACY_AMINO_JSON,
       }),

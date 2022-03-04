@@ -131,9 +131,9 @@ export default class AbstractCommand extends TerraCommand {
     this.contracts = [this.opts.contract.id]
   }
 
-  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract> => {
+  makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract[]> => {
     const address = this.args[0]
-    return new MsgExecuteContract(signer, address, this.params)
+    return [new MsgExecuteContract(signer, address, this.params)]
   }
 
   abstractDeploy: AbstractExecute = async (params: any) => {

@@ -43,7 +43,7 @@ export const instructionToCommand = (instruction: AbstractInstruction<any, any>)
       return abstractCommand
     }
 
-    makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract> => {
+    makeRawTransaction = async (signer: AccAddress): Promise<MsgExecuteContract[]> => {
       const command = await this.buildCommand()
       return command.makeRawTransaction(signer)
     }
