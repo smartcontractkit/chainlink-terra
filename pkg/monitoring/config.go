@@ -15,6 +15,8 @@ import (
 type TerraConfig struct {
 	TendermintURL    string
 	FCDURL           string
+	GRPCAddr         string
+	GRPCAPIKey       string
 	NetworkName      string
 	NetworkID        string
 	ChainID          string
@@ -73,6 +75,12 @@ func parseEnvVars(cfg *TerraConfig) error {
 	if value, isPresent := os.LookupEnv("TERRA_FCD_URL"); isPresent {
 		cfg.FCDURL = value
 	}
+	if value, isPresent := os.LookupEnv("TERRA_GRPC_ADDR"); isPresent {
+		cfg.GRPCAddr = value
+	}
+	if value, isPresent := os.LookupEnv("TERRA_GRPC_API_KEY"); isPresent {
+		cfg.GRPCAPIKey = value
+	}
 	if value, isPresent := os.LookupEnv("TERRA_NETWORK_NAME"); isPresent {
 		cfg.NetworkName = value
 	}
@@ -109,19 +117,25 @@ func parseEnvVars(cfg *TerraConfig) error {
 func validateConfig(cfg TerraConfig) error {
 	// Required config
 	for envVarName, currentValue := range map[string]string{
-		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
-		"TERRA_FCD_URL":        cfg.FCDURL,
-		"TERRA_NETWORK_NAME":   cfg.NetworkName,
-		"TERRA_NETWORK_ID":     cfg.NetworkID,
-		"TERRA_CHAIN_ID":       cfg.ChainID,
+		"TERRA_FCD_URL":      cfg.FCDURL,
+		"TERRA_NETWORK_NAME": cfg.NetworkName,
+		"TERRA_NETWORK_ID":   cfg.NetworkID,
+		"TERRA_CHAIN_ID":     cfg.ChainID,
 	} {
 		if currentValue == "" {
 			return fmt.Errorf("'%s' env var is required", envVarName)
 		}
 	}
+	if cfg.TendermintURL == "" && cfg.GRPCAddr == "" {
+		return fmt.Errorf("either TERRA_TENDERMINT_URL or TERRA_GRPC_ADDR need to be set")
+	}
+	if cfg.GRPCAddr != "" && cfg.GRPCAPIKey == "" {
+		return fmt.Errorf("TERRA_GRPC_API_KEY needs to be set if TERRA_GRPC_ADDR is used")
+	}
 	// Validate URLs.
 	for envVarName, currentValue := range map[string]string{
 		"TERRA_TENDERMINT_URL": cfg.TendermintURL,
+		"TERRA_GRPC_ADDR":      cfg.GRPCAddr,
 		"TERRA_FCD_URL":        cfg.FCDURL,
 	} {
 		if _, err := url.ParseRequestURI(currentValue); currentValue != "" && err != nil {

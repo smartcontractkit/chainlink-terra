@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ func TestErrMatch(t *testing.T) {
 }
 
 func TestBatchSim(t *testing.T) {
+	ctx := context.Background()
 	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
 
 	lggr := new(mocks.Logger)
@@ -47,14 +49,14 @@ func TestBatchSim(t *testing.T) {
 		lggr)
 	require.NoError(t, err)
 
-	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(ctx, t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 	var succeed sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"reset":{"count":5}}`)}
 	var fail sdk.Msg = &wasmtypes.MsgExecuteContract{Sender: accounts[0].Address.String(), Contract: contract.String(), ExecuteMsg: []byte(`{"blah":{"count":5}}`)}
 
 	t.Run("single success", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
 		assert.Equal(t, int64(1), res.Succeeded[0].ID)
@@ -62,10 +64,10 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("single failure", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
 		require.Equal(t, 1, len(res.Failed))
@@ -73,11 +75,11 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("multi failure", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once() // retry
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Succeeded))
 		assert.Equal(t, int64(1), res.Succeeded[0].ID)
@@ -87,30 +89,30 @@ func TestBatchSim(t *testing.T) {
 	})
 
 	t.Run("multi succeed", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(res.Succeeded))
 		assert.Equal(t, 1, len(res.Failed))
 	})
 
 	t.Run("all succeed", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: succeed}, {ID: int64(2), Msg: succeed}, {ID: int64(3), Msg: succeed}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 3, len(res.Succeeded))
 		assert.Equal(t, 0, len(res.Failed))
 	})
 
 	t.Run("all fail", func(t *testing.T) {
-		_, sn, err := tc.Account(accounts[0].Address)
+		_, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Times(2) // retry
 		lggr.On("Warnf", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
-		res, err := tc.BatchSimulateUnsigned([]SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
+		res, err := tc.BatchSimulateUnsigned(ctx, []SimMsg{{ID: int64(1), Msg: fail}, {ID: int64(2), Msg: fail}, {ID: int64(3), Msg: fail}}, sn)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(res.Succeeded))
 		assert.Equal(t, 3, len(res.Failed))
@@ -119,6 +121,7 @@ func TestBatchSim(t *testing.T) {
 }
 
 func TestTerraClient(t *testing.T) {
+	ctx := context.Background()
 	// Local only for now, could maybe run on CI if we install terrad there?
 	accounts, testdir, tendermintURL := SetupLocalTerraNode(t, "42")
 	lggr := new(mocks.Logger)
@@ -134,27 +137,27 @@ func TestTerraClient(t *testing.T) {
 	gpe := NewFixedGasPriceEstimator(map[string]sdk.DecCoin{
 		"uluna": sdk.NewDecCoinFromDec("uluna", sdk.MustNewDecFromStr("0.01")),
 	})
-	contract := DeployTestContract(t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
+	contract := DeployTestContract(ctx, t, tendermintURL, accounts[0], accounts[0], tc, testdir, "../testdata/my_first_contract.wasm")
 
 	t.Run("send tx between accounts", func(t *testing.T) {
 		// Assert balance before
-		b, err := tc.Balance(accounts[1].Address, "uluna")
+		b, err := tc.Balance(ctx, accounts[1].Address, "uluna")
 		require.NoError(t, err)
 		assert.Equal(t, "100000000", b.Amount.String())
 
 		// Send a uluna from one account to another and ensure balances update
-		an, sn, err := tc.Account(accounts[0].Address)
+		an, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		fund := msg.NewMsgSend(accounts[0].Address, accounts[1].Address, msg.NewCoins(msg.NewInt64Coin("uluna", 1)))
-		gasLimit, err := tc.SimulateUnsigned([]msg.Msg{fund}, sn)
+		gasLimit, err := tc.SimulateUnsigned(ctx, []msg.Msg{fund}, sn)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
 		txBytes, err := tc.CreateAndSign([]msg.Msg{fund}, an, sn, gasLimit.GasInfo.GasUsed, DefaultGasLimitMultiplier, gasPrices["uluna"], accounts[0].PrivateKey, 0)
 		require.NoError(t, err)
-		_, err = tc.Simulate(txBytes)
+		_, err = tc.Simulate(ctx, txBytes)
 		require.NoError(t, err)
-		resp, err := tc.Broadcast(txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp, err := tc.Broadcast(ctx, txBytes, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		require.Equal(t, types.CodeTypeOK, resp.TxResponse.Code)
 
@@ -162,28 +165,28 @@ func TestTerraClient(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert balance changed
-		b, err = tc.Balance(accounts[1].Address, "uluna")
+		b, err = tc.Balance(ctx, accounts[1].Address, "uluna")
 		require.NoError(t, err)
 		assert.Equal(t, "100000001", b.Amount.String())
 
 		// Invalid tx should error
-		_, err = tc.Tx("1234")
+		_, err = tc.Tx(ctx, "1234")
 		require.Error(t, err)
 
 		// Ensure we can read back the tx with Query
-		tr, err := tc.TxsEvents([]string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)}, nil)
+		tr, err := tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height=%v", resp.TxResponse.Height)}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, 1, len(tr.TxResponses))
 		assert.Equal(t, resp.TxResponse.TxHash, tr.TxResponses[0].TxHash)
 		// And also Tx
-		getTx, err := tc.Tx(resp.TxResponse.TxHash)
+		getTx, err := tc.Tx(ctx, resp.TxResponse.TxHash)
 		require.NoError(t, err)
 		assert.Equal(t, getTx.TxResponse.TxHash, resp.TxResponse.TxHash)
 	})
 
 	t.Run("can get height", func(t *testing.T) {
 		// Check getting the height works
-		latestBlock, err := tc.LatestBlock()
+		latestBlock, err := tc.LatestBlock(ctx)
 		require.NoError(t, err)
 		assert.True(t, latestBlock.Block.Header.Height > 1)
 	})
@@ -191,6 +194,7 @@ func TestTerraClient(t *testing.T) {
 	t.Run("contract event querying", func(t *testing.T) {
 		// Query initial contract state
 		count, err := tc.ContractStore(
+			ctx,
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
@@ -198,6 +202,7 @@ func TestTerraClient(t *testing.T) {
 		assert.Equal(t, `{"count":0}`, string(count))
 		// Query invalid state should give an error
 		count, err = tc.ContractStore(
+			ctx,
 			contract,
 			[]byte(`{"blah":{}}`),
 		)
@@ -206,23 +211,24 @@ func TestTerraClient(t *testing.T) {
 
 		// Change the contract state
 		rawMsg := wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":5}}`), sdk.Coins{})
-		an, sn, err := tc.Account(accounts[0].Address)
+		an, sn, err := tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
 		gasPrices, err := gpe.GasPrices()
 		require.NoError(t, err)
-		resp1, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		resp1, err := tc.SignAndBroadcast(ctx, []msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 		// Do it again so there are multiple executions
 		rawMsg = wasmtypes.NewMsgExecuteContract(accounts[0].Address, contract, []byte(`{"reset":{"count":4}}`), sdk.Coins{})
-		an, sn, err = tc.Account(accounts[0].Address)
+		an, sn, err = tc.Account(ctx, accounts[0].Address)
 		require.NoError(t, err)
-		_, err = tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+		_, err = tc.SignAndBroadcast(ctx, []msg.Msg{rawMsg}, an, sn, gasPrices["uluna"], accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 		require.NoError(t, err)
 		time.Sleep(1 * time.Second)
 
 		// Observe changed contract state
 		count, err = tc.ContractStore(
+			ctx,
 			contract,
 			[]byte(`{"get_count":{}}`),
 		)
@@ -231,7 +237,7 @@ func TestTerraClient(t *testing.T) {
 
 		// Check events querying works
 		// TxEvents sorts in a descending manner, so latest txes are first
-		ev, err := tc.TxsEvents([]string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
+		ev, err := tc.TxsEvents(ctx, []string{fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(ev.TxResponses))
 		foundCount := false
@@ -255,10 +261,10 @@ func TestTerraClient(t *testing.T) {
 		assert.True(t, foundContract)
 
 		// Ensure the height filtering works
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
+		ev, err = tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height>=%d", resp1.TxResponse.Height+1), fmt.Sprintf("wasm-reset.contract_address='%s'", contract.String())}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
-		ev, err = tc.TxsEvents([]string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)}, nil)
+		ev, err = tc.TxsEvents(ctx, []string{fmt.Sprintf("tx.height=%d", resp1.TxResponse.Height), fmt.Sprintf("wasm-reset.contract_address='%s'", contract)}, nil)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(ev.TxResponses))
 		for _, ev := range ev.TxResponses[0].Logs[0].Events {
@@ -303,9 +309,9 @@ func TestTerraClient(t *testing.T) {
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Log("Gas price:", tt.gasPrice)
-				an, sn, err := tc.Account(accounts[0].Address)
+				an, sn, err := tc.Account(ctx, accounts[0].Address)
 				require.NoError(t, err)
-				resp, err := tc.SignAndBroadcast([]msg.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
+				resp, err := tc.SignAndBroadcast(ctx, []msg.Msg{rawMsg}, an, sn, tt.gasPrice, accounts[0].PrivateKey, txtypes.BroadcastMode_BROADCAST_MODE_BLOCK)
 				if tt.expCode == 0 {
 					require.NoError(t, err)
 				} else {
@@ -320,7 +326,7 @@ func TestTerraClient(t *testing.T) {
 				require.Equal(t, tt.expCode, resp.TxResponse.Code)
 				if tt.expCode == 0 {
 					time.Sleep(2 * time.Second)
-					txResp, err := tc.Tx(resp.TxResponse.TxHash)
+					txResp, err := tc.Tx(ctx, resp.TxResponse.TxHash)
 					require.NoError(t, err)
 					t.Log("Fee:", txResp.Tx.GetFee())
 					t.Log("Height:", txResp.TxResponse.Height)

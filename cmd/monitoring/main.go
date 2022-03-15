@@ -21,20 +21,19 @@ func main() {
 		return
 	}
 
-	client, err := pkgClient.NewClient(
+	client, err := pkgClient.NewClientWithGRPCTransport(
 		terraConfig.ChainID,
-		terraConfig.TendermintURL,
-		terraConfig.ReadTimeout,
+		terraConfig.GRPCAddr,
+		terraConfig.GRPCAPIKey,
 		coreLog,
 	)
 	if err != nil {
 		log.Fatalw("failed to create a terra client", "error", err)
 		return
 	}
-	chainReader := monitoring.NewChainReader(client)
 
 	envelopeSourceFactory := monitoring.NewEnvelopeSourceFactory(
-		chainReader,
+		client,
 		log.With("component", "source-envelope"),
 	)
 	txResultsFactory := monitoring.NewTxResultsSourceFactory(
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	proxySourceFactory := monitoring.NewProxySourceFactory(
-		chainReader,
+		client,
 		log.With("component", "source-proxy"),
 	)
 	if entrypoint.Config.Feature.TestOnlyFakeReaders {
