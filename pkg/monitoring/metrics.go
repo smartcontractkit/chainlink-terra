@@ -17,21 +17,21 @@ type Metrics interface {
 var (
 	proxyAnswersRaw = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "proxy_answers_raw",
+			Name: "ocr2_proxy_answers_raw",
 			Help: "Reports the latest raw answer from the proxy contract.",
 		},
 		[]string{"proxy_contract_address", "feed_id", "chain_id", "contract_status", "contract_type", "feed_name", "feed_path", "network_id", "network_name"},
 	)
 	proxyAnswers = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "proxy_answers",
+			Name: "ocr2_proxy_answers",
 			Help: "Reports the latest answer from the proxy contract divided by the feed's multiplier parameter.",
 		},
 		[]string{"proxy_contract_address", "feed_id", "chain_id", "contract_status", "contract_type", "feed_name", "feed_path", "network_id", "network_name"},
 	)
 	linkAvailableForPayment = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "link_available_for_payments",
+			Name: "ocr2_link_available_for_payments",
 			Help: "Reports the amount of link the contract can use to make payments to node operators. This may be different from the LINK balance of the contract since that can contain debt",
 		},
 		[]string{"feed_id", "chain_id", "contract_status", "contract_type", "feed_name", "feed_path", "network_id", "network_name"},
