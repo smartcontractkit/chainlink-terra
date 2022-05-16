@@ -26,6 +26,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/terra-money/core/app"
 	"github.com/terra-money/core/app/params"
 	wasmtypes "github.com/terra-money/core/x/wasm/types"
@@ -81,7 +82,16 @@ type Writer interface {
 	CreateAndSign(msgs []sdk.Msg, account uint64, sequence uint64, gasLimit uint64, gasLimitMultiplier float64, gasPrice sdk.DecCoin, signer key.PrivKey, timeoutHeight uint64) ([]byte, error)
 }
 
+type Subscriber interface {
+	Start() error
+	Stop() error
+	Subscribe(ctx context.Context, query string, outCapacity int) (<-chan ctypes.ResultEvent, error)
+	Unsubscribe(ctx context.Context, query string) error
+	UnsubscribeAll(ctx context.Context) error
+}
+
 var _ ReaderWriter = (*Client)(nil)
+var _ Subscriber = (*Client)(nil)
 
 const (
 	// DefaultTimeout is the default Terra client timeout.
@@ -118,6 +128,7 @@ type Client struct {
 	wasmClient              wasmtypes.QueryClient
 	bankClient              banktypes.QueryClient
 	tendermintServiceClient tmtypes.ServiceClient
+	tmClient                *rpchttp.HTTP
 	log                     Logger
 }
 
@@ -204,6 +215,7 @@ func NewClient(chainID string,
 		tendermintServiceClient: tendermintServiceClient,
 		bankClient:              bankClient,
 		clientCtx:               clientCtx,
+		tmClient:                tmClient,
 		log:                     lggr,
 	}, nil
 }
@@ -463,4 +475,26 @@ func (c *Client) Balance(addr sdk.AccAddress, denom string) (*sdk.Coin, error) {
 		return nil, err
 	}
 	return b.Balance, nil
+}
+
+// Subscriber implementation
+
+func (c *Client) Start() error {
+	return c.tmClient.WSEvents.Start()
+}
+
+func (c *Client) Stop() error {
+	return c.tmClient.WSEvents.Stop()
+}
+
+func (c *Client) Subscribe(ctx context.Context, query string, outCapacity int) (<-chan ctypes.ResultEvent, error) {
+	return c.tmClient.WSEvents.Subscribe(ctx, "subscriber-is-ignored", query, outCapacity)
+}
+
+func (c *Client) Unsubscribe(ctx context.Context, query string) error {
+	return c.tmClient.WSEvents.Unsubscribe(ctx, "subscriber-is-ignored", query)
+}
+
+func (c *Client) UnsubscribeAll(ctx context.Context) error {
+	return c.tmClient.WSEvents.UnsubscribeAll(ctx, "subscriber-is-ignored")
 }
