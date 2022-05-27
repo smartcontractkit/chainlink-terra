@@ -67,5 +67,5 @@ config:
   # postgres configs
   terra-env:PG-PORT: 6600 # OPTIONAL: defaults to 5432
   terra-env:PG-HEALTH-TIMEOUT: 120 # seconds, max wait for postgres to start, default 30
-  terra-env:TERRA-DEPLOYER: localterra-deployer
+  terra-env:TERRA-DEPLOYER-KEY-ID: localterra-deployer
   terra-env:NETWORK_NAME: chainlink-terra-network

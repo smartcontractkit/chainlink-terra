@@ -14,6 +14,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	opsChainlink "github.com/smartcontractkit/chainlink-relay/ops/chainlink"
 	"github.com/smartcontractkit/chainlink-relay/ops/utils"
+	common "github.com/smartcontractkit/chainlink-terra/ops/deployer/common"
 	"github.com/smartcontractkit/libocr/offchainreporting2/confighelper"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -117,28 +118,14 @@ func (t *Terrad) Load() error {
 	return msg.Check(nil)
 }
 
-type balance struct {
-	Address string `json:"address"`
-	Amount  string `json:"amount"`
-}
-
-type LINKinit struct {
-	Name            string      `json:"name"`
-	Symbol          string      `json:"symbol"`
-	Decimals        int         `json:"decimals"`
-	InitialBalances []balance   `json:"initial_balances"`
-	Mint            interface{} `json:"mint"`
-	Marketing       interface{} `json:"marketing"`
-}
-
 func (t *Terrad) DeployLINK() error {
 	msg := utils.LogStatus("Deployed LINK token")
-	initBal := balance{Address: t.addr, Amount: "1000000000000000000000000000"}
-	initMsg := LINKinit{
+	initBal := common.balance{Address: t.addr, Amount: "1000000000000000000000000000"}
+	initMsg := common.LINKinit{
 		Name:            "ChainLink Token",
 		Symbol:          "LINK",
 		Decimals:        18,
-		InitialBalances: []balance{initBal},
+		InitialBalances: []common.balance{initBal},
 		Mint:            nil,
 		Marketing:       nil,
 	}
@@ -172,19 +159,9 @@ func (t *Terrad) DeployLINK() error {
 	return msg.Check(nil)
 }
 
-type OCRinit struct {
-	LinkToken                 string `json:"link_token"`
-	MinAnswer                 string `json:"min_answer"`
-	MaxAnswer                 string `json:"max_answer"`
-	BillingAccessController   string `json:"billing_access_controller"`
-	RequesterAccessController string `json:"requester_access_controller"`
-	Decimals                  int    `json:"decimals"`
-	Description               string `json:"description"`
-}
-
 func (t *Terrad) DeployOCR() error {
 	msg := utils.LogStatus("Deployed OCR contract")
-	initMsg := OCRinit{
+	initMsg := common.OCRinit{
 		LinkToken:                 t.Deployed[LINK],
 		MinAnswer:                 "0",
 		MaxAnswer:                 "999999999999999999",
@@ -223,20 +200,10 @@ func (t *Terrad) DeployOCR() error {
 	return msg.Check(nil)
 }
 
-type Send struct {
-	Send SendDetails `json:"send"`
-}
-
-type SendDetails struct {
-	Contract string `json:"contract"`
-	Amount   string `json:"amount"`
-	Msg      string `json:"msg"`
-}
-
 func (t Terrad) TransferLINK() error {
 	msg := utils.LogStatus("Sending LINK to OCR contract")
-	tx := Send{
-		Send: SendDetails{
+	tx := common.Send{
+		Send: common.SendDetails{
 			Contract: t.Deployed[OCR2],
 			Amount:   "100000000000000000000",
 			Msg:      "",
@@ -251,56 +218,6 @@ func (t Terrad) TransferLINK() error {
 	args := append([]string{"tx", "wasm", "execute", t.Deployed[LINK], string(txBytes)}, t.args...)
 	_, err = exec.Command("terrad", args...).Output()
 	return msg.Check(err)
-}
-
-const BeginProposal = "begin_proposal"
-
-type ProposeConfig struct {
-	ProposeConfig ProposeConfigDetails `json:"propose_config"`
-}
-
-type ProposeConfigDetails struct {
-	ID            string   `json:"id"`
-	Payees        []string `json:"payees"`
-	Signers       [][]byte `json:"signers"`
-	Transmitters  []string `json:"transmitters"`
-	F             uint8    `json:"f"`
-	OnchainConfig []byte   `json:"onchain_config"`
-}
-
-type ProposeOffchainConfig struct {
-	ProposeOffchainConfig ProposeOffchainConfigDetails `json:"propose_offchain_config"`
-}
-
-type ProposeOffchainConfigDetails struct {
-	ID                    string `json:"id"`
-	OffchainConfigVersion uint64 `json:"offchain_config_version"`
-	OffchainConfig        []byte `json:"offchain_config"`
-}
-
-type ClearProposal struct {
-	ClearProposal ClearProposalDetails `json:"clear_proposal"`
-}
-
-type ClearProposalDetails struct {
-	ID string `json:"id"`
-}
-
-type FinalizeProposal struct {
-	FinalizeProposal FinalizeProposalDetails `json:"finalize_proposal"`
-}
-
-type FinalizeProposalDetails struct {
-	ID string `json:"id"`
-}
-
-type AcceptProposal struct {
-	AcceptProposal AcceptProposalDetails `json:"accept_proposal"`
-}
-
-type AcceptProposalDetails struct {
-	ID     string `json:"id"`
-	Digest []byte `json:"digest"`
 }
 
 func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
@@ -372,7 +289,7 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: begin proposal")
-	resp, err := t.ExecuteOCR2(BeginProposal)
+	resp, err := t.ExecuteOCR2(common.BeginProposal)
 	if err == nil && len(resp.Logs) == 0 {
 		err = errors.New("begin proposal produced no logs")
 	}
@@ -405,8 +322,8 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		}
 		// Failure: Try to clean up incomplete proposal.
 		status = utils.LogStatus("InitOCR: clear proposal: " + id)
-		resp, err = t.ExecuteOCR2(ClearProposal{
-			ClearProposal: ClearProposalDetails{ID: id},
+		resp, err = t.ExecuteOCR2(common.ClearProposal{
+			ClearProposal: common.ClearProposalDetails{ID: id},
 		})
 		if status.Check(err) != nil {
 			fmt.Println(err)
@@ -419,8 +336,8 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 		payees = append(payees, t.addr)
 	}
 	status = utils.LogStatus("InitOCR: propose config " + id)
-	resp, err = t.ExecuteOCR2(ProposeConfig{
-		ProposeConfig: ProposeConfigDetails{
+	resp, err = t.ExecuteOCR2(common.ProposeConfig{
+		ProposeConfig: common.ProposeConfigDetails{
 			ID:            id,
 			Payees:        payees,
 			Signers:       signerArray,
@@ -434,8 +351,8 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: propose offchain config")
-	resp, err = t.ExecuteOCR2(ProposeOffchainConfig{
-		ProposeOffchainConfig: ProposeOffchainConfigDetails{
+	resp, err = t.ExecuteOCR2(common.ProposeOffchainConfig{
+		ProposeOffchainConfig: common.ProposeOffchainConfigDetails{
 			ID:                    id,
 			OffchainConfigVersion: offchainConfigVersion,
 			OffchainConfig:        offchainConfig,
@@ -446,8 +363,8 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: finalize proposal")
-	resp, err = t.ExecuteOCR2(FinalizeProposal{
-		FinalizeProposal: FinalizeProposalDetails{ID: id},
+	resp, err = t.ExecuteOCR2(common.FinalizeProposal{
+		FinalizeProposal: common.FinalizeProposalDetails{ID: id},
 	})
 	if status.Check(err) != nil {
 		return err
@@ -477,8 +394,8 @@ func (t Terrad) InitOCR(keys []opsChainlink.NodeKeys) (rerr error) {
 	}
 
 	status = utils.LogStatus("InitOCR: accept proposal")
-	resp, err = t.ExecuteOCR2(AcceptProposal{
-		AcceptProposal: AcceptProposalDetails{
+	resp, err = t.ExecuteOCR2(common.AcceptProposal{
+		AcceptProposal: common.AcceptProposalDetails{
 			ID:     id,
 			Digest: digest,
 		},

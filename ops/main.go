@@ -6,13 +6,13 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	opsCore "github.com/smartcontractkit/chainlink-relay/ops"
-	"github.com/smartcontractkit/chainlink-terra/ops/terrad"
+	gauntlet "github.com/smartcontractkit/chainlink-terra/ops/deployer/gauntlet"
 )
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// initiate `terrad` usage
-		terra, err := terrad.New(ctx)
+		// initiate `gauntlet` usage
+		terra, err := gauntlet.New(ctx)
 		if err != nil {
 			return err
 		}
