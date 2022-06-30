@@ -5,17 +5,21 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/pelletier/go-toml"
+	"github.com/pkg/errors"
 	"github.com/smartcontractkit/terra.go/key"
 	"github.com/smartcontractkit/terra.go/msg"
 	"github.com/stretchr/testify/assert"
@@ -39,8 +43,78 @@ type Account struct {
 	Address    sdk.AccAddress
 }
 
+type safeBuffer struct {
+	buf   bytes.Buffer
+	bufMu sync.RWMutex
+}
+
+func (sb *safeBuffer) Write(p []byte) (n int, err error) {
+	sb.bufMu.Lock()
+	defer sb.bufMu.Unlock()
+	return sb.buf.Write(p)
+}
+
+func (sb *safeBuffer) ReadBytes(delim byte) (line []byte, err error) {
+	sb.bufMu.RLock()
+	defer sb.bufMu.RUnlock()
+	return sb.buf.ReadBytes(delim)
+}
+
+func (sb *safeBuffer) String() string {
+	sb.bufMu.RLock()
+	defer sb.bufMu.RUnlock()
+	return sb.buf.String()
+}
+
 // 0.001
 var minGasPrice = msg.NewDecCoinFromDec("uluna", msg.NewDecWithPrec(1, 3))
+
+func cleanupNode(t *testing.T, stdErr *safeBuffer, cmd *exec.Cmd) {
+	assert.NoError(t, cmd.Process.Kill())
+	if err2 := cmd.Wait(); assert.Error(t, err2) {
+		if !assert.Contains(t, err2.Error(), "signal: killed", cmd.ProcessState.String()) {
+			t.Log("terrad stderr:", stdErr.String())
+		}
+	}
+}
+
+func findAvailablePortAndStart(t *testing.T, testdir string) (*exec.Cmd, *safeBuffer, string) {
+	maxPortAttempts := 5
+	for i := 0; i < maxPortAttempts; i++ {
+		port := mustRandomPort()
+		tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+		t.Log(tendermintURL)
+		//nolint:gosec
+		cmd := exec.Command("terrad", "start", "--home", testdir,
+			"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
+			"--rpc.pprof_laddr", "0.0.0.0:0",
+			"--grpc.address", "0.0.0.0:0",
+			"--grpc-web.address", "0.0.0.0:0",
+			"--p2p.laddr", "0.0.0.0:0")
+		buf := safeBuffer{buf: bytes.Buffer{}}
+		cmd.Stderr = &buf
+		require.NoError(t, cmd.Start())
+		// Read stderr to confirm boot
+		for {
+			line, err := buf.ReadBytes(byte('\n'))
+			if errors.Is(err, io.EOF) {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			if strings.Contains(string(line), "received proposal") {
+				// Means we successfully started
+				return cmd, &buf, tendermintURL
+			}
+			if strings.Contains(string(line), "address already in use") {
+				t.Log("port already in use, retrying with different port")
+				cleanupNode(t, &buf, cmd)
+				break
+			}
+		}
+	}
+	t.Fatalf("unable to find available port")
+	return nil, &safeBuffer{}, ""
+}
 
 // SetupLocalTerraNode sets up a local terra node via terrad, and returns pre-funded accounts, the test directory, and the url.
 func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, string) {
@@ -94,18 +168,7 @@ func SetupLocalTerraNode(t *testing.T, chainID string) ([]Account, string, strin
 	out, err = exec.Command("terrad", "collect-gentxs", "--home", testdir).CombinedOutput()
 	require.NoError(t, err, string(out))
 
-	port := mustRandomPort()
-	tendermintURL := fmt.Sprintf("http://127.0.0.1:%d", port)
-	t.Log(tendermintURL)
-	cmd := exec.Command("terrad", "start", "--home", testdir,
-		"--rpc.laddr", fmt.Sprintf("tcp://127.0.0.1:%d", port),
-		"--rpc.pprof_laddr", "0.0.0.0:0",
-		"--grpc.address", "0.0.0.0:0",
-		"--grpc-web.address", "0.0.0.0:0",
-		"--p2p.laddr", "0.0.0.0:0")
-	var stdErr bytes.Buffer
-	cmd.Stderr = &stdErr
-	require.NoError(t, cmd.Start())
+	cmd, stdErr, tendermintURL := findAvailablePortAndStart(t, testdir)
 	t.Cleanup(func() {
 		assert.NoError(t, cmd.Process.Kill())
 		if err2 := cmd.Wait(); assert.Error(t, err2) {
